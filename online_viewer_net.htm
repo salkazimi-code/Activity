@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Grade 3 Revision Game</title>
+    <style>
+        :root { --primary: #3498db; --secondary: #f1c40f; --accent: #e67e22; --success: #2ecc71; --bg: #ecf0f1; }
+        body { font-family: 'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif; background-color: var(--bg); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        #game-container { background: white; width: 95%; max-width: 800px; padding: 25px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 5px solid var(--primary); }
+        .progress-bar { width: 100%; background: #ddd; height: 20px; border-radius: 10px; margin-bottom: 20px; overflow: hidden; }
+        #progress { height: 100%; background: var(--success); width: 0%; transition: 0.4s; }
+        .category-tag { background: var(--secondary); padding: 5px 15px; border-radius: 15px; font-weight: bold; color: #444; display: inline-block; margin-bottom: 10px; }
+        .img-box img { width: 100%; max-width: 350px; border-radius: 20px; margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .question-text { font-size: 1.4rem; margin-bottom: 20px; color: #2c3e50; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        button { padding: 15px; font-size: 1.1rem; border: 3px solid var(--primary); border-radius: 15px; background: white; cursor: pointer; transition: 0.2s; font-family: inherit; }
+        button:hover { background: var(--primary); color: white; transform: scale(1.02); }
+        .writing-box { background: #f9f9f9; padding: 20px; border: 2px dashed #3498db; border-radius: 15px; margin-bottom: 20px; }
+        #sentence-display { min-height: 50px; font-size: 1.3rem; border-bottom: 2px solid #ccc; margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; }
+        .word-bank { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+        .word-btn { background: #eee; border: 1px solid #bbb; padding: 8px 15px; border-radius: 8px; cursor: pointer; }
+        #feedback { font-size: 1.5rem; font-weight: bold; margin-top: 20px; height: 30px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div class="progress-bar"><div id="progress"></div></div>
+    
+    <div id="quiz-ui">
+        <div class="category-tag" id="cat-display">Category</div>
+        <div class="img-box" id="image-display"></div>
+        <div class="question-text" id="q-text">Question?</div>
+        
+        <div id="mc-area" class="options-grid"></div>
+        
+        <div id="writing-area" class="hidden">
+            <div class="writing-box">
+                <div id="sentence-display"></div>
+                <div class="word-bank" id="word-bank"></div>
+            </div>
+            <button onclick="clearWriting()">Reset Words</button>
+            <button onclick="checkWriting()" style="border-color: var(--success);">Submit Sentence</button>
+        </div>
+        
+        <div id="feedback"></div>
+    </div>
+
+    <div id="result-ui" class="hidden">
+        <h1 style="color: var(--primary);">Revision Complete! 🏆</h1>
+        <p id="final-score" style="font-size: 1.5rem;"></p>
+        <button onclick="location.reload()">Play Again</button>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        // Seen Comprehension
+        { cat: "Seen Comprehension", q: "This text is ________.", options: ["in a diary", "in a book", "in a notebook", "in a magazine"], ans: 3, img: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400" },
+        { cat: "Seen Comprehension", q: "Noha is from Egypt and celebrates ________.", options: ["Sports Day", "New Year", "Saudi National Day", "Sham el-Nessim"], ans: 3, img: "https://images.unsplash.com/photo-1552423158-95e946d5c030?w=400" },
+        { cat: "Seen Comprehension", q: "Zaid is from Saudi Arabia and celebrates ________.", options: ["Teacher’s Day", "Sham el-Nessim", "New Year", "Saudi National Day"], ans: 3, img: "https://images.unsplash.com/photo-1551041777-ed07f99b67d1?w=400" },
+
+        // Grammar - have to
+        { cat: "Grammar: Have to", q: "Ali _______ finish his homework tonight. (✔)", options: ["don’t have to", "has to", "have to", "doesn’t have to"], ans: 1, img: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=400" },
+        { cat: "Grammar: Have to", q: "We _______ bring our books to class tomorrow. (✔)", options: ["haven’t to", "has to", "have to", "doesn’t have to"], ans: 2, img: "https://images.unsplash.com/photo-1491843384429-30494622eb9d?w=400" },
+        { cat: "Grammar: Have to", q: "She _______ clean her room today. (✘)", options: ["don’t have to", "has to", "have to", "doesn’t have to"], ans: 3, img: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=400" },
+        { cat: "Grammar: Have to", q: "They _______ wear helmets when riding bikes. (✔)", options: ["haven’t to", "has to", "have to", "doesn’t have to"], ans: 2, img: "https://images.unsplash.com/photo-1557613511-825597793d98?w=400" },
+
+        // Grammar - going to
+        { cat: "Grammar: Going to", q: "Ahmad has his football shoes ready. He _______ play football. (✔)", options: ["is going to", "was going to", "aren’t going to", "are going to"], ans: 0, img: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=400" },
+        { cat: "Grammar: Going to", q: "We _______ watch a movie tonight. (✔)", options: ["isn’t going to", "are going to", "is going to", "am going to"], ans: 1, img: "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=400" },
+        { cat: "Grammar: Going to", q: "She _______ travel this weekend. (✘)", options: ["be going to", "are going to", "isn’t going to", "am going to"], ans: 2, img: "https://images.unsplash.com/photo-1436491865332-7a61a109c0f3?w=400" },
+        { cat: "Grammar: Going to", q: "They don’t have swimsuits. They _______ swim today. (✘)", options: ["isn’t going to", "aren’t going to", "is going to", "am going to"], ans: 1, img: "https://images.unsplash.com/photo-1519046904884-53103b34b206?w=400" },
+
+        // Phonics
+        { cat: "Phonics", q: "I see a big ____ in the countryside.", options: ["cow", "cou", "caw", "coa"], ans: 0, img: "https://images.unsplash.com/photo-1545468241-1efee9a27e62?w=400" },
+        { cat: "Phonics", q: "We climbed a tall ____ during our trip.", options: ["mountin", "mountain", "mountein", "mountan"], ans: 1, img: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=400" },
+        { cat: "Phonics", q: "The rose is a beautiful ____.", options: ["flower", "flowar", "flouer", "flouwer"], ans: 0, img: "https://images.unsplash.com/photo-1496062031456-07b8f162a322?w=400" },
+        { cat: "Phonics", q: "I opened my ____ to eat.", options: ["muth", "mouth", "mouht", "mough"], ans: 1, img: "https://images.unsplash.com/photo-1516245834210-c4c142787335?w=400" },
+        { cat: "Phonics", q: "She wore a pink ____ at the party.", options: ["skirt", "skert", "skirtt", "skirte"], ans: 0, img: "https://images.unsplash.com/photo-1582142306909-195724d33ffc?w=400" },
+        { cat: "Phonics", q: "The ____ is my favourite toy.", options: ["burger", "burgar", "burgher", "burgr"], ans: 0, img: "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400" },
+
+        // Vocabulary
+        { cat: "Vocabulary: Months", q: "What is the fifth month of the year?", options: ["April", "June", "May", "March"], ans: 2, img: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=400" },
+        { cat: "Vocabulary: Months", q: "What is the third month of the year?", options: ["January", "February", "March", "April"], ans: 2, img: "https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=400" },
+        { cat: "Vocabulary: Months", q: "January is what month of the year?", options: ["first", "second", "third", "fifth"], ans: 0, img: "https://images.unsplash.com/photo-1485230895905-ec40ba36b9bc?w=400" },
+        { cat: "Vocabulary: Months", q: "February is what month of the year?", options: ["first", "third", "second", "fourth"], ans: 2, img: "https://images.unsplash.com/photo-1551846581-2b8100c8117d?w=400" },
+        { cat: "Vocabulary: Sports", q: "Today there is a football ________.", options: ["competition", "players", "medals", "uniform"], ans: 0, img: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=400" },
+        { cat: "Vocabulary: Sports", q: "There are eleven ________ in a football team.", options: ["matches", "players", "winner", "medals"], ans: 1, img: "https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=400" },
+        { cat: "Vocabulary: Sports", q: "Teams play three ________ during the tournament.", options: ["team", "medals", "matches", "uniform"], ans: 2, img: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=400" },
+        { cat: "Vocabulary: Sports", q: "The best teams win gold ________.", options: ["players", "competition", "medals", "team"], ans: 2, img: "https://images.unsplash.com/photo-1578267153699-89d35b7ee9b5?w=400" },
+        { cat: "Vocabulary: Sports", q: "Each football ________ has a coach.", options: ["winner", "team", "matches", "uniform"], ans: 1, img: "https://images.unsplash.com/photo-1526232761682-d26e43ac148e?w=400" },
+        { cat: "Vocabulary: Sports", q: "The students wear a sports ________.", options: ["medals", "uniform", "competition", "players"], ans: 1, img: "https://images.unsplash.com/photo-1515238152791-8216bfdf89a7?w=400" },
+        { cat: "Vocabulary: Sports", q: "The ________ gets a big trophy.", options: ["matches", "uniform", "team", "winner"], ans: 3, img: "https://images.unsplash.com/photo-1589487391730-58f20eb2c308?w=400" },
+        { cat: "Vocabulary: Sports", q: "Today there is a football ________ between two teams.", options: ["match", "uniform", "team", "winner"], ans: 0, img: "https://images.unsplash.com/photo-1551952237-954a0e68786c?w=400" },
+        { cat: "Vocabulary: Sports", q: "The winners will get ________.", options: ["medals", "uniform", "competition", "players"], ans: 0, img: "https://images.unsplash.com/photo-1578267153699-89d35b7ee9b5?w=400" },
+        { cat: "Vocabulary: Sports", q: "Our school ________ is very good.", options: ["match", "uniform", "team", "winner"], ans: 2, img: "https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=400" },
+
+        // Writing Section - Reordering
+        { cat: "Writing: Reorder", type: "reorder", q: "Rearrange to make a sentence:", words: ["She", "doesn't", "have to", "clean", "the room."], answer: "She doesn't have to clean the room." },
+        { cat: "Writing: Reorder", type: "reorder", q: "Rearrange to make a sentence:", words: ["Students", "have to", "wear", "uniforms."], answer: "Students have to wear uniforms." },
+        { cat: "Writing: Reorder", type: "reorder", q: "Rearrange to make a sentence:", words: ["We", "have to", "wash", "the dishes."], answer: "We have to wash the dishes." },
+        { cat: "Writing: Reorder", type: "reorder", q: "Rearrange to make a sentence:", words: ["Ali", "doesn't", "have to", "early.", "wake up"], answer: "Ali doesn't have to wake up early." },
+        { cat: "Writing: Reorder", type: "reorder", q: "Rearrange to make a sentence:", words: ["I", "have to", "finish", "my homework."], answer: "I have to finish my homework." },
+        { cat: "Writing: Reorder", type: "reorder", q: "Rearrange to make a sentence:", words: ["It", "is", "going to", "rain."], answer: "It is going to rain." },
+        { cat: "Writing: Reorder", type: "reorder", q: "Rearrange to make a sentence:", words: ["They", "are", "going to", "play football."], answer: "They are going to play football." },
+        { cat: "Writing: Reorder", type: "reorder", q: "Rearrange to make a sentence:", words: ["She", "is", "going to", "visit her grandmother."], answer: "She is going to visit her grandmother." },
+        { cat: "Writing: Reorder", type: "reorder", q: "Rearrange to make a sentence:", words: ["We", "are", "going to", "watch a movie."], answer: "We are going to watch a movie." },
+        { cat: "Writing: Reorder", type: "reorder", q: "Rearrange to make a sentence:", words: ["He", "is", "going to", "buy a new bag."], answer: "He is going to buy a new bag." }
+    ];
+
+    let currentIdx = 0;
+    let score = 0;
+    let userSentence = [];
+
+    function loadQuestion() {
+        const data = questions[currentIdx];
+        document.getElementById("cat-display").innerText = data.cat;
+        document.getElementById("q-text").innerText = data.q;
+        document.getElementById("feedback").innerText = "";
+        document.getElementById("progress").style.width = (currentIdx / questions.length * 100) + "%";
+        
+        if (data.type === "reorder") {
+            document.getElementById("mc-area").classList.add("hidden");
+            document.getElementById("image-display").classList.add("hidden");
+            document.getElementById("writing-area").classList.remove("hidden");
+            setupWriting(data);
+        } else {
+            document.getElementById("writing-area").classList.add("hidden");
+            document.getElementById("mc-area").classList.remove("hidden");
+            document.getElementById("image-display").classList.remove("hidden");
+            document.getElementById("image-display").innerHTML = `<img src="${data.img}">`;
+            
+            const mcArea = document.getElementById("mc-area");
+            mcArea.innerHTML = "";
+            data.options.forEach((opt, index) => {
+                const btn = document.createElement("button");
+                btn.innerText = opt;
+                btn.onclick = () => checkMC(index);
+                mcArea.appendChild(btn);
+            });
+        }
+    }
+
+    function checkMC(idx) {
+        if (idx === questions[currentIdx].ans) {
+            score++;
+            document.getElementById("feedback").innerText = "Correct! 🌟";
+            document.getElementById("feedback").style.color = "green";
+        } else {
+            document.getElementById("feedback").innerText = "Incorrect! ❌";
+            document.getElementById("feedback").style.color = "red";
+        }
+        setTimeout(next, 1200);
+    }
+
+    function setupWriting(data) {
+        userSentence = [];
+        updateWritingDisplay();
+        const pool = document.getElementById("word-bank");
+        pool.innerHTML = "";
+        [...data.words].sort(() => Math.random() - 0.5).forEach(word => {
+            const btn = document.createElement("div");
+            btn.className = "word-btn";
+            btn.innerText = word;
+            btn.onclick = () => {
+                userSentence.push(word);
+                btn.style.display = "none";
+                updateWritingDisplay();
+            };
+            pool.appendChild(btn);
+        });
+    }
+
+    function updateWritingDisplay() {
+        document.getElementById("sentence-display").innerText = userSentence.join(" ");
+    }
+
+    function clearWriting() {
+        setupWriting(questions[currentIdx]);
+    }
+
+    function checkWriting() {
+        if (userSentence.join(" ") === questions[currentIdx].answer) {
+            score++;
+            document.getElementById("feedback").innerText = "Great Sentence! ✨";
+            document.getElementById("feedback").style.color = "green";
+        } else {
+            document.getElementById("feedback").innerText = "Not quite right. ❌";
+            document.getElementById("feedback").style.color = "red";
+        }
+        setTimeout(next, 1500);
+    }
+
+    function next() {
+        currentIdx++;
+        if (currentIdx < questions.length) {
+            loadQuestion();
+        } else {
+            finishGame();
+        }
+    }
+
+    function finishGame() {
+        document.getElementById("quiz-ui").classList.add("hidden");
+        document.getElementById("result-ui").classList.remove("hidden");
+        document.getElementById("final-score").innerText = `You got ${score} out of ${questions.length} questions correct!`;
+        document.getElementById("progress").style.width = "100%";
+    }
+
+    loadQuestion();
+</script>
+
+</body>
+</html>
